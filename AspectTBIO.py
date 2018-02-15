@@ -102,15 +102,22 @@ def add_word_features(sent, i):
     word = sent[i][0]
     syns = wordnet.synsets(word)
     postag = sent[i][1]
+    if len(sent)> 10:
+        sentence_length = "long"
+    else:
+        sentence_length = "short"
+    #print word,postag
     features = [
         'word.lower=' + word.lower(),
+        'sentence_length=%s'% sentence_length,
         'word.istitle=%s' % word.istitle(),
         'word.isupper=%s' % word.isupper(),
+        'word.islower=%s' % word.islower(),
+        'word.isdigit=%s' % word.isdigit(),
         'word.length=%s' %  "long" if len(word) > 5 else "short"
         'postag=' + postag,
-        'postag[:2]=' + postag[:2],
-        'sentence.length=%s' % "long" if len(sent) > 12 else "short"
-        'sentence.position=%s' % sent_pos(len(sent), i)
+        'word.pos_in_sent=%s' % (i + 1),
+        'postag[:2]=' + postag[:2]
     ]
     
     for k in range(len(syns)):
@@ -129,7 +136,7 @@ def add_word_features(sent, i):
 
         ])
     else:
-        features.append('_Begin_')
+        features.append('__Begin__')
 
     if i < len(sent)-1:
         word1 = sent[i+1][0]
@@ -142,7 +149,7 @@ def add_word_features(sent, i):
             '+1:postag[:2]=' + postag1[:2],
         ])
     else:
-        features.append('_End_')
+        features.append('__End__')
                 
     return features
 
