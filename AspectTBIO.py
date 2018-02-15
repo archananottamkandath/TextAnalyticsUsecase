@@ -114,7 +114,7 @@ def add_word_features(sent, i):
         'word.isupper=%s' % word.isupper(),
         'word.islower=%s' % word.islower(),
         'word.isdigit=%s' % word.isdigit(),
-        'word.length=%s' %  "long" if len(word) > 5 else "short"
+        'word.length=%s' %  "long" if len(word) > 5 else "short",
         'postag=' + postag,
         'word.pos_in_sent=%s' % (i + 1),
         'postag[:2]=' + postag[:2]
