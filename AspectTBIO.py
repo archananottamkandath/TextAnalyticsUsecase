@@ -86,43 +86,50 @@ def add_sent_features(sent):
 def add_sent_labels(sent):
     return [label for token, postag, label in sent]
   
-
-def add_word_features(sent,i):
-    word = sent[i][0]
-    postag = sent[i][1]
-    if len(sent)> 10:
-        sentence_length = "long"
+from nltk.corpus import wordnet
+    
+# Beginning, Middle or End of Sentence
+def sent_pos(sent, index):
+    if index < sent/3:
+        return "Begining"
+    elif index < 2*sent/3:
+        return "Middle"
     else:
-        sentence_length = "short"
-    #print word,postag
+        return "End"
+
+
+def add_word_features(sent, i):
+    word = sent[i][0]
+    syns = wordnet.synsets(word)
+    postag = sent[i][1]
     features = [
-        'word.length=%i' % len(word),
         'word.lower=' + word.lower(),
-        'sentence_length=%s'% sentence_length,
         'word.istitle=%s' % word.istitle(),
         'word.isupper=%s' % word.isupper(),
-        'word.islower=%s' % word.islower(),
-        'word.isdigit=%s' % word.isdigit(),
+        'word.length=%s' %  "long" if len(word) > 5 else "short"
         'postag=' + postag,
-        'word.pos_in_sent=%s' % (i + 1),
-        'postag[:2]=' + postag[:2]
-        #'bias',
-        #'word[-3:]=' + word[-3:],
-        #'word[-2:]=' + word[-2:],
-        #'postag[:2]=' + postag[:2],
+        'postag[:2]=' + postag[:2],
+        'sentence.length=%s' % "long" if len(sent) > 12 else "short"
+        'sentence.position=%s' % sent_pos(len(sent), i)
     ]
+    
+    for k in range(len(syns)):
+        features.append('word.synonym.%s=' % k + syns[k].lemmas()[0].name())
+        #hyns = syns[k].hypernyms()
     if i > 0:
         word1 = sent[i-1][0]
+        syns1 = wordnet.synsets(word1)
         postag1 = sent[i-1][1]
         features.extend([
             '-1:word.lower=' + word1.lower(),
             '-1:word.istitle=%s' % word1.istitle(),
             '-1:word.isupper=%s' % word1.isupper(),
             '-1:postag=' + postag1,
-            '-1:postag[:2]=' + postag1[:2],
+            '-1:postag[:2]=' + postag1[:2]
+
         ])
     else:
-        features.append('__Begin__')
+        features.append('_Begin_')
 
     if i < len(sent)-1:
         word1 = sent[i+1][0]
@@ -135,23 +142,46 @@ def add_word_features(sent,i):
             '+1:postag[:2]=' + postag1[:2],
         ])
     else:
-        features.append('__End__')
-    #print features
+        features.append('_End_')
+                
     return features
 
+
+
+
+
+# Replicate the lines which have more common B and I
+def calculate_weight(sent):
+    weight = 1
+    for i in sent:
+        if i[2] == 'B':
+            weight +=1
+        elif i[2] == 'I':
+            weight +=1
+    return weight
+    
+
+def enhance_train(dataset):
+    new_dataset = []
+    for sent in dataset:
+        weight = calculate_weight(sent)
+        for i in range (0,weight):
+            new_dataset.append(sent)
+    return new_dataset
 
 
 train_set = ParseXML(ET.parse('Data/Laptops_Train_v2.xml'))
 test_set = ParseXML(ET.parse('Data/Laptops_Test_Gold.xml'))
 
+  
+new_train = enhance_train(train_set)
 
-X_train = [add_sent_features(s) for s in train_set]
-y_train = [add_sent_labels(s) for s in train_set]
+
+X_train = [add_sent_features(s) for s in new_train]
+y_train = [add_sent_labels(s) for s in new_train]
 
 X_test = [add_sent_features(s) for s in test_set]
 y_test = [add_sent_labels(s) for s in test_set]
-
-
 
 
 
